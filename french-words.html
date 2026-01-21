@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu de Mots - Français</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 16px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; font-size: 40px; margin: 20px 0 10px; font-weight: 900; }
+        .subtitle { text-align: center; opacity: 0.9; margin-bottom: 30px; }
+        .difficulty-grid { display: grid; gap: 16px; margin: 20px 0; }
+        .diff-btn {
+            padding: 24px;
+            border: none;
+            border-radius: 16px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-align: left;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .diff-btn:active { transform: scale(0.95); }
+        .beginner { background: linear-gradient(135deg, #10b981, #059669); }
+        .intermediate { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .advanced { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .expert { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .word-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+        .word-column { display: flex; flex-direction: column; gap: 12px; }
+        .word-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            word-wrap: break-word;
+            line-height: 1.3;
+            transition: opacity 0.2s;
+        }
+        .word-btn:active { opacity: 0.8; }
+        .blue { background: #3b82f6; color: white; }
+        .purple { background: #8b5cf6; color: white; }
+        .blue.selected, .purple.selected { opacity: 0.6; }
+        .blue.matched { background: #93c5fd; color: #1e3a8a; opacity: 0.5; }
+        .purple.matched { background: #c4b5fd; color: #5b21b6; opacity: 0.5; }
+        .header {
+            background: white;
+            color: #1f2937;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+        }
+        .stats { display: flex; gap: 8px; margin-top: 12px; }
+        .stat {
+            flex: 1;
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .stat-value { font-size: 18px; font-weight: bold; color: #ec4899; }
+        .controls { display: flex; gap: 12px; margin-top: 16px; }
+        .control-btn {
+            flex: 1;
+            padding: 14px;
+            background: white;
+            color: #1f2937;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .emoji { font-size: 32px; }
+        .info { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 24px 48px;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: fadeInOut 0.6s;
+        }
+        .feedback.correct { background: #10b981; color: white; }
+        .feedback.wrong { background: #ef4444; color: white; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app"></div>
+    </div>
+    <script>
+const WORDS = {
+    beginner: `Hello|Bonjour,Goodbye|Au revoir,Please|S'il vous plaît,Thank you|Merci,Yes|Oui,No|Non,Excuse me|Excusez-moi,Sorry|Désolé,Good morning|Bonjour,Good night|Bonne nuit,How are you?|Comment allez-vous?,My name is|Je m'appelle,Nice to meet you|Enchanté,See you later|À plus tard,Welcome|Bienvenue,One|Un,Two|Deux,Three|Trois,Four|Quatre,Five|Cinq,Six|Six,Seven|Sept,Eight|Huit,Nine|Neuf,Ten|Dix,Family|Famille,Mother|Mère,Father|Père,Sister|Sœur,Brother|Frère,Son|Fils,Daughter|Fille,Grandmother|Grand-mère,Grandfather|Grand-père,Red|Rouge,Blue|Bleu,Yellow|Jaune,Green|Vert,Black|Noir,White|Blanc,Orange|Orange,Purple|Violet,Pink|Rose,Brown|Marron,House|Maison,Water|Eau,Food|Nourriture,Friend|Ami,School|École,Book|Livre,Car|Voiture,Dog|Chien,Cat|Chat,Tree|Arbre,Sun|Soleil,Moon|Lune,Star|Étoile,Head|Tête,Eye|Œil,Ear|Oreille,Nose|Nez,Mouth|Bouche,Hand|Main,Foot|Pied,Arm|Bras,Leg|Jambe,Monday|Lundi,Tuesday|Mardi,Wednesday|Mercredi,Thursday|Jeudi,Friday|Vendredi,Saturday|Samedi,Sunday|Dimanche,Day|Jour,Week|Semaine,Month|Mois,Year|Année,Today|Aujourd'hui,Tomorrow|Demain,Yesterday|Hier,Bread|Pain,Milk|Lait,Coffee|Café,Tea|Thé,Meat|Viande,Fish|Poisson,Egg|Œuf,Apple|Pomme,Orange|Orange,Banana|Banane,To be|Être,To have|Avoir,To do|Faire,To go|Aller,To come|Venir,To see|Voir,To know|Savoir,To want|Vouloir,To speak|Parler,To eat|Manger,To drink|Boire,To live|Vivre,Happy|Heureux,Sad|Triste,Angry|En colère,Tired|Fatigué,Hungry|Affamé,Cold|Froid,Hot|Chaud,Big|Grand,Small|Petit,Good|Bon,Bad|Mauvais,Beautiful|Beau,Ugly|Laid,Easy|Facile,Difficult|Difficile,Fast|Rapide,Slow|Lent,Strong|Fort,Weak|Faible,Rich|Riche,Poor|Pauvre,Bird|Oiseau,Horse|Cheval,Cow|Vache,Pig|Cochon,Chicken|Poulet,Duck|Canard,Lion|Lion,Tiger|Tigre,Elephant|Éléphant,Monkey|Singe`.split(','),
+    
+    intermediate: `Important|Important,Interesting|Intéressant,Boring|Ennuyeux,Dangerous|Dangereux,Safe|Sûr,Comfortable|Confortable,Uncomfortable|Inconfortable,Modern|Moderne,Ancient|Ancien,New|Nouveau,Old|Vieux,Young|Jeune,Fresh|Frais,Delicious|Délicieux,Terrible|Terrible,Wonderful|Merveilleux,Strange|Étrange,Normal|Normal,Special|Spécial,Common|Commun,Rare|Rare,Frequent|Fréquent,Occasional|Occasionnel,Constant|Constant,Temporary|Temporaire,Permanent|Permanent,Public|Public,Private|Privé,General|Général,Specific|Spécifique,Complete|Complet,Incomplete|Incomplet,Perfect|Parfait,Imperfect|Imparfait,Correct|Correct,Incorrect|Incorrect,True|Vrai,False|Faux,Real|Réel,Fake|Faux,Natural|Naturel,Artificial|Artificiel,Possible|Possible,Impossible|Impossible,Necessary|Nécessaire,Optional|Optionnel,Useful|Utile,Useless|Inutile,Effective|Efficace,Ineffective|Inefficace`.split(','),
+    
+    advanced: `Truth|Vérité,Lie|Mensonge,Justice|Justice,Freedom|Liberté,Peace|Paix,War|Guerre,Power|Pouvoir,Strength|Force,Weakness|Faiblesse,Courage|Courage,Fear|Peur,Hope|Espoir,Faith|Foi,Doubt|Doute,Trust|Confiance,Honesty|Honnêteté,Wisdom|Sagesse,Knowledge|Connaissance,Success|Succès,Failure|Échec,Victory|Victoire,Defeat|Défaite,Progress|Progrès,Development|Développement,Growth|Croissance,Decline|Déclin,Achievement|Réussite,Accomplishment|Accomplissement,Challenge|Défi,Opportunity|Opportunité,Advantage|Avantage,Disadvantage|Désavantage,Benefit|Bénéfice,Risk|Risque,Consequence|Conséquence,Result|Résultat,Effect|Effet,Cause|Cause,Reason|Raison,Purpose|But,Goal|Objectif,Target|Cible,Strategy|Stratégie,Plan|Plan,Method|Méthode,Technique|Technique,Approach|Approche,Solution|Solution,Problem|Problème`.split(','),
+    
+    expert: `Democracy|Démocratie,Dictatorship|Dictature,Government|Gouvernement,Parliament|Parlement,Constitution|Constitution,Legislation|Législation,Policy|Politique,Economy|Économie,Finance|Finance,Investment|Investissement,Corporation|Corporation,Enterprise|Entreprise,Industry|Industrie,Commerce|Commerce,Technology|Technologie,Innovation|Innovation,Research|Recherche,Science|Science,Theory|Théorie,Hypothesis|Hypothèse,Experiment|Expérience,Discovery|Découverte,Invention|Invention,Philosophy|Philosophie,Psychology|Psychologie,Sociology|Sociologie,Anthropology|Anthropologie,Archaeology|Archéologie,History|Histoire,Geography|Géographie,Literature|Littérature,Poetry|Poésie,Novel|Roman,Drama|Drame,Comedy|Comédie,Tragedy|Tragédie,Architecture|Architecture,Sculpture|Sculpture,Painting|Peinture,Music|Musique,Symphony|Symphonie,Opera|Opéra,Ballet|Ballet,Theatre|Théâtre,Cinema|Cinéma,Photography|Photographie,Journalism|Journalisme,Media|Médias,Communication|Communication`.split(',')
+};
+
+function parseWords(str) {
+    return str.map(pair => {
+        const [e, f] = pair.split('|');
+        return { e, f };
+    });
+}
+
+let state = {
+    difficulty: '',
+    score: 0,
+    matched: 0,
+    streak: 0,
+    round: 0,
+    selected: [],
+    matchedIds: [],
+    currentPairs: [],
+    used: new Set()
+};
+
+function shuffle(arr) {
+    return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function showFeedback(isCorrect) {
+    const feedback = document.createElement('div');
+    feedback.className = `feedback ${isCorrect ? 'correct' : 'wrong'}`;
+    feedback.textContent = isCorrect ? 'Parfait! ✓' : 'Faux! ✗';
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 600);
+}
+
+function startGame(diff) {
+    state.difficulty = diff;
+    state.score = 0;
+    state.matched = 0;
+    state.streak = 0;
+    state.round = 0;
+    state.used = new Set();
+    nextRound();
+}
+
+function nextRound() {
+    state.selected = [];
+    state.matchedIds = [];
+    state.round++;
+    
+    const allWords = parseWords(WORDS[state.difficulty]);
+    const available = allWords.filter((_, i) => !state.used.has(i));
+    
+    if (available.length < 5) {
+        state.used = new Set();
+    }
+    
+    const pairs = [];
+    const used = new Set(state.used);
+    
+    while (pairs.length < 5 && pairs.length < allWords.length) {
+        const idx = Math.floor(Math.random() * allWords.length);
+        if (!used.has(idx)) {
+            pairs.push({ ...allWords[idx], id: pairs.length });
+            used.add(idx);
+        }
+    }
+    
+    state.used = used;
+    state.currentPairs = pairs;
+    renderGame();
+}
+
+function renderDifficultySelect() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <h1>🇫🇷 Jeu de Mots</h1>
+        <p class="subtitle">Choisissez votre niveau de difficulté</p>
+        <div class="difficulty-grid">
+            <button class="diff-btn beginner" onclick="startGame('beginner')">
+                <div>
+                    <div style="font-size: 24px; font-weight: 900;">Débutant</div>
+                    <div class="info">Mots essentiels • 10 pts chacun</div>
+                </div>
+                <div class="emoji">🟢</div>
+            </button>
+            <button class="diff-btn intermediate" onclick="startGame('intermediate')">
+                <div>
+                    <div style="font-size: 24px; font-weight: 900;">Intermédiaire</div>
+                    <div class="info">Mots courants • 15 pts chacun</div>
+                </div>
+                <div class="emoji">🟡</div>
+            </button>
+            <button class="diff-btn advanced" onclick="startGame('advanced')">
+                <div>
+                    <div style="font-size: 24px; font-weight: 900;">Avancé</div>
+                    <div class="info">Mots complexes • 20 pts chacun</div>
+                </div>
+                <div class="emoji">🔴</div>
+            </button>
+            <button class="diff-btn expert" onclick="startGame('expert')">
+                <div>
+                    <div style="font-size: 24px; font-weight: 900;">Expert</div>
+                    <div class="info">Mots académiques • 25 pts chacun</div>
+                </div>
+                <div class="emoji">🟣</div>
+            </button>
+        </div>
+    `;
+}
+
+function renderGame() {
+    const french = shuffle(state.currentPairs.map(p => ({...p, side: 'fr'})));
+    const english = shuffle(state.currentPairs.map(p => ({...p, side: 'en'})));
+    const points = state.difficulty === 'beginner' ? 10 : state.difficulty === 'intermediate' ? 15 : state.difficulty === 'advanced' ? 20 : 25;
+    
+    document.getElementById('app').innerHTML = `
+        <button class="back-btn" onclick="renderDifficultySelect()">← Changer de Difficulté</button>
+        
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <div>
+                    <h2 style="margin: 0; font-size: 20px;">Jeu de Mots</h2>
+                    <div style="font-size: 12px; opacity: 0.7; text-transform: capitalize;">${state.difficulty === 'beginner' ? 'Débutant' : state.difficulty === 'intermediate' ? 'Intermédiaire' : state.difficulty === 'advanced' ? 'Avancé' : 'Expert'}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 28px; font-weight: 900; color: #ec4899;">${state.score}</div>
+                    <div style="font-size: 11px; opacity: 0.7;">points</div>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">${state.matched}</div>
+                    <div>Paires</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${state.streak}</div>
+                    <div>Série</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">${state.round}</div>
+                    <div>Manche</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="word-grid">
+            <div class="word-column">
+                ${french.map(w => `
+                    <button 
+                        class="word-btn blue ${state.selected.includes('fr'+w.id) ? 'selected' : ''} ${state.matchedIds.includes(w.id) ? 'matched' : ''}"
+                        onclick="selectWord('fr${w.id}', ${w.id})"
+                        ${state.matchedIds.includes(w.id) ? 'disabled' : ''}
+                    >
+                        ${w.f}
+                    </button>
+                `).join('')}
+            </div>
+            <div class="word-column">
+                ${english.map(w => `
+                    <button 
+                        class="word-btn purple ${state.selected.includes('en'+w.id) ? 'selected' : ''} ${state.matchedIds.includes(w.id) ? 'matched' : ''}"
+                        onclick="selectWord('en${w.id}', ${w.id})"
+                        ${state.matchedIds.includes(w.id) ? 'disabled' : ''}
+                    >
+                        ${w.e}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="nextRound()">Nouveaux Mots</button>
+            <button class="control-btn" onclick="renderDifficultySelect()">Recommencer</button>
+        </div>
+    `;
+}
+
+function selectWord(wordId, pairId) {
+    if (state.selected.includes(wordId) || state.matchedIds.includes(pairId)) return;
+    
+    state.selected.push(wordId);
+    
+    const btn = document.querySelector(`button[onclick="selectWord('${wordId}', ${pairId})"]`);
+    if (btn) btn.classList.add('selected');
+    
+    if (state.selected.length === 2) {
+        const id1 = parseInt(state.selected[0].slice(2));
+        const id2 = parseInt(state.selected[1].slice(2));
+        const points = state.difficulty === 'beginner' ? 10 : state.difficulty === 'intermediate' ? 15 : state.difficulty === 'advanced' ? 20 : 25;
+        
+        if (id1 === id2) {
+            showFeedback(true);
+            state.matchedIds.push(pairId);
+            state.score += points;
+            state.matched += 1;
+            state.streak += 1;
+            
+            state.selected.forEach(id => {
+                const b = document.querySelectorAll(`button[onclick*="${id}"]`)[0];
+                if (b) {
+                    b.classList.remove('selected');
+                    b.classList.add('matched');
+                    b.disabled = true;
+                }
+            });
+            
+            setTimeout(() => {
+                state.selected = [];
+                if (state.matchedIds.length === 5) {
+                    setTimeout(nextRound, 500);
+                }
+            }, 600);
+        } else {
+            showFeedback(false);
+            state.streak = 0;
+            setTimeout(() => {
+                state.selected.forEach(id => {
+                    const b = document.querySelectorAll(`button[onclick*="${id}"]`)[0];
+                    if (b) b.classList.remove('selected');
+                });
+                state.selected = [];
+            }, 600);
+        }
+    }
+}
+
+renderDifficultySelect();
+    </script>
+</body>
+</html>
